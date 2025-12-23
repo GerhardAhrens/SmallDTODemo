@@ -21,6 +21,9 @@ namespace SmallDTODemo
     /* Imports from NET Framework */
     using System;
     using System.Globalization;
+    using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     public class Program
     {
@@ -29,6 +32,8 @@ namespace SmallDTODemo
             ConsoleMenu.Add("1", "Demo 1 zu SmallDTO", () => MenuPoint1());
             ConsoleMenu.Add("2", "Prüfen, ob zwei DTO Objekt gleich sind", () => MenuPoint2());
             ConsoleMenu.Add("3", "Clone eines DTO Objekt erstellen", () => MenuPoint3());
+            ConsoleMenu.Add("4", "Behandlung von Null", () => MenuPoint4());
+            ConsoleMenu.Add("5", "Schreiben und Lesen JSON", () => MenuPoint5());
             ConsoleMenu.Add("X", "Beenden", () => ApplicationExit());
 
             do
@@ -50,6 +55,7 @@ namespace SmallDTODemo
             var dto = new SmallDTO<SmallDTOKeys>();
             dto.Set(SmallDTOKeys.Name, "Max Mustermann");
             dto.Set(SmallDTOKeys.Age, 65);
+            dto.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
             dto.Set(SmallDTOKeys.IsActive, true);
             dto.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
 
@@ -70,12 +76,14 @@ namespace SmallDTODemo
             var dto = new SmallDTO<SmallDTOKeys>();
             dto.Set(SmallDTOKeys.Name, "Max Mustermann");
             dto.Set(SmallDTOKeys.Age, 65);
+            dto.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
             dto.Set(SmallDTOKeys.IsActive, true);
             dto.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
 
             var dto2 = new SmallDTO<SmallDTOKeys>();
             dto2.Set(SmallDTOKeys.Name, "Max Mustermann");
             dto2.Set(SmallDTOKeys.Age, 65);
+            dto2.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
             dto2.Set(SmallDTOKeys.IsActive, true);
             dto2.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
 
@@ -98,6 +106,7 @@ namespace SmallDTODemo
             var dto = new SmallDTO<SmallDTOKeys>();
             dto.Set(SmallDTOKeys.Name, "Max Mustermann");
             dto.Set(SmallDTOKeys.Age, 65);
+            dto.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
             dto.Set(SmallDTOKeys.IsActive, true);
             dto.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
 
@@ -117,32 +126,91 @@ namespace SmallDTODemo
 
             ConsoleMenu.Wait();
         }
+
+        private static void MenuPoint4()
+        {
+            Console.Clear();
+
+            var dto = new SmallDTO<SmallDTOKeys>();
+            dto.Set<string>(SmallDTOKeys.Name, null);
+            dto.Set<int?>(SmallDTOKeys.Age, null);
+            dto.Set<bool?>(SmallDTOKeys.IsActive, null);
+            dto.Set(SmallDTOKeys.Parts, new List<string> { });
+
+            List<string> parts = dto.Get<List<string>>(SmallDTOKeys.Parts);
+
+            if (dto.Get<string>(SmallDTOKeys.Name, out var name))
+            {
+                ConsoleMenu.Print($"Name: {name}");
+            }
+
+            ConsoleMenu.Wait();
+        }
+
+        private static void MenuPoint5()
+        {
+            Console.Clear();
+
+            var dto = new SmallDTO<SmallDTOKeys>();
+            dto.Set(SmallDTOKeys.Name, "Max Mustermann");
+            dto.Set(SmallDTOKeys.Age, 65);
+            dto.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
+            dto.Set(SmallDTOKeys.IsActive, true);
+            dto.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
+            dto.ToJson("dto.json");
+
+            ConsoleMenu.Wait();
+        }
+    }
+
+    public class ClassicDTO
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public DateTime Birthday { get; set; }
+        public List<string> Parts { get; set; }
+        public Dictionary<int, string> Attributes { get; set; }
+        public bool IsActive { get; set; }
     }
 
     public enum SmallDTOKeys
     {
         Name,
         Age,
+        Birthday,
         Parts,
         IsActive,
     }
 
-    public class SmallDTO<TKey> where TKey : Enum
+    public sealed class SmallDTO<TKey> where TKey : Enum
     {
-        private readonly Dictionary<Enum,object> _DtoDict = new();
+        private Dictionary<Enum,object> _DtoDict = new();
 
         public int Count { get { return this._DtoDict.Count; } }
 
         public void Set<T>(TKey key, T value)
         {
-            this._DtoDict[key] = Convert.ChangeType(value, typeof(T),CultureInfo.CurrentCulture);
+            if (value == null)
+            {
+                this._DtoDict[key] = null;
+            }
+            else
+            {
+                this._DtoDict[key] = Convert.ChangeType(value, typeof(T), CultureInfo.CurrentCulture);
+            }
         }
 
         public bool Get<T>(TKey key, out T value)
         {
-            if (this._DtoDict.TryGetValue(key, out var obj) && obj is T tValue)
+            if (this._DtoDict.TryGetValue(key, out var obj) == true && obj is T tValue)
             {
                 value = tValue;
+                return true;
+            }
+
+            if(obj == null)
+            {
+                value = (T)obj;
                 return true;
             }
 
@@ -152,7 +220,7 @@ namespace SmallDTODemo
 
         public T Get<T>(TKey key)
         {
-            if (this._DtoDict.TryGetValue(key, out var obj) && obj is T tValue)
+            if (this._DtoDict.TryGetValue(key, out var obj) == true && obj is T tValue)
             {
                 return tValue;
             }
@@ -203,7 +271,7 @@ namespace SmallDTODemo
                 }
                 else
                 {
-                    if (!valueComparer.Equals(kvp.Value, value))
+                    if (valueComparer.Equals(kvp.Value, value) == false)
                     {
                         return false;
                     }
@@ -225,6 +293,32 @@ namespace SmallDTODemo
             return newDto;
         }
 
+        public void ToJson(string filePath)
+        {
+            var options = new JsonSerializerOptions
+            {
+                WriteIndented = true,
+            };
+
+            options.Converters.Add(new EnumObjectDictionaryConverter());
+            string json = JsonSerializer.Serialize(this._DtoDict, options);
+            if (string.IsNullOrEmpty(json) == false)
+            {
+                File.WriteAllText(filePath, json);
+            }
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            foreach (var kvp in this._DtoDict)
+            {
+                sb.AppendLine($"{kvp.Key}: {kvp.Value}");
+            }
+
+            return sb.ToString();
+        }
+
         public override int GetHashCode()
         {
             int result = 0;
@@ -239,6 +333,37 @@ namespace SmallDTODemo
             result = hash.ToHashCode();
 
             return result;
+        }
+
+        private class EnumObjectDictionaryConverter : JsonConverter<Dictionary<Enum, object>>
+        {
+            public override Dictionary<Enum, object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var result = new Dictionary<Enum, object>();
+
+                using var doc = JsonDocument.ParseValue(ref reader);
+
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    Enum key = (Enum)Enum.Parse(typeof(TKey), prop.Name);
+                    result[key] = prop.Value;
+                }
+
+                return result;
+            }
+
+            public override void Write(Utf8JsonWriter writer, Dictionary<Enum, object> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+
+                foreach (var kvp in value)
+                {
+                    writer.WritePropertyName(kvp.Key.ToString());
+                    JsonSerializer.Serialize(writer, kvp.Value, options);
+                }
+
+                writer.WriteEndObject();
+            }
         }
     }
 }

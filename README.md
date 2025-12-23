@@ -12,6 +12,26 @@ Allerdings kann die Verwendung von DTOs je nach Projekt eine große Anzahl von Kl
 
 Klassische DTO-Klasse:
 ```csharp
+public class ClassicDTO
+{
+    public string Name { get; set; }
+    public int Age { get; set; }
+    public DateTime Birthday { get; set; }
+    public List<string> Parts { get; set; }
+    public bool IsActive { get; set; }
+}
+```
+
+Beispiel für ein Enum das im SmallDTO verwendet wird:
+```csharp
+public enum SmallDTOKeys
+{
+    Name,
+    Age,
+    Birthday,
+    Parts,
+    IsActive,
+}
 ```
 
 DTO-Klasse mit SmallDTO
@@ -19,6 +39,7 @@ DTO-Klasse mit SmallDTO
 var dto = new SmallDTO<SmallDTOKeys>();
 dto.Set(SmallDTOKeys.Name, "Max Mustermann");
 dto.Set(SmallDTOKeys.Age, 65);
+dto.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
 dto.Set(SmallDTOKeys.IsActive, true);
 dto.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
 
@@ -35,12 +56,14 @@ Mit der Verwendung von SmallDTO sind auch ein einige Vorteile vorhanden. So kann
 var dto = new SmallDTO<SmallDTOKeys>();
 dto.Set(SmallDTOKeys.Name, "Max Mustermann");
 dto.Set(SmallDTOKeys.Age, 65);
+dto.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
 dto.Set(SmallDTOKeys.IsActive, true);
 dto.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
 
 var dto2 = new SmallDTO<SmallDTOKeys>();
 dto2.Set(SmallDTOKeys.Name, "Max Mustermann");
 dto2.Set(SmallDTOKeys.Age, 65);
+dto2.Set(SmallDTOKeys.Birthday, new DateTime(1960, 6, 28));
 dto2.Set(SmallDTOKeys.IsActive, true);
 dto2.Set(SmallDTOKeys.Parts, new List<string> { "Part1", "Part2", "Part3" });
 
@@ -53,4 +76,8 @@ else
     ConsoleMenu.Print("Die beiden DTO Objekte sind ungleich.");
 }
 ```
+
+|Funktion|Beschreibung|
+|:-|:-|
+|Set|Setzt einen Wert im SmallDTO|
 
