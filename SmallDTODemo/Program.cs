@@ -29,11 +29,15 @@ namespace SmallDTODemo
     {
         private static void Main(string[] args)
         {
-            ConsoleMenu.Add("1", "Demo 1 zu SmallDTO", () => MenuPoint1());
+            ConsoleMenu.Add("1", "Demo 1 zu SmallDTO mit Enum-Key", () => MenuPoint1());
             ConsoleMenu.Add("2", "Prüfen, ob zwei DTO Objekt gleich sind", () => MenuPoint2());
             ConsoleMenu.Add("3", "Clone eines DTO Objekt erstellen", () => MenuPoint3());
             ConsoleMenu.Add("4", "Behandlung von Null", () => MenuPoint4());
             ConsoleMenu.Add("5", "Schreiben und Lesen JSON", () => MenuPoint5());
+            ConsoleMenu.Add("6", "Demo 2 zu SmallDTO mit String-Key", () => MenuPoint6());
+            ConsoleMenu.Add("7", "Prüfen, ob zwei DTO Objekt gleich sind", () => MenuPoint7());
+            ConsoleMenu.Add("8", "Clone eines DTO Objekt erstellen", () => MenuPoint8());
+            ConsoleMenu.Add("9", "Schreiben und Lesen JSON", () => MenuPoint9());
             ConsoleMenu.Add("X", "Beenden", () => ApplicationExit());
 
             do
@@ -117,12 +121,19 @@ namespace SmallDTODemo
                 ConsoleMenu.Print("Die beiden DTO Objekte sind gleich.");
                 var dtoHash = dto.GetHashCode();
                 var dtoCloneHash = dtoClone.GetHashCode();
+                if (dtoHash.Equals(dtoCloneHash) == true)
+                {
+                    ConsoleMenu.Print("Der HashCode beiden DTO Objekte ist gleich.");
+                }
+                else
+                {
+                    ConsoleMenu.Print("Der HashCode beiden DTO Objekte ist ungleich.");
+                }
             }
             else
             {
                 ConsoleMenu.Print("Die beiden DTO Objekte sind ungleich.");
             }
-
 
             ConsoleMenu.Wait();
         }
@@ -161,6 +172,114 @@ namespace SmallDTODemo
 
             ConsoleMenu.Wait();
         }
+
+        private static void MenuPoint6()
+        {
+            Console.Clear();
+
+            SmallDTO dto = new();
+            dto.Set("Name", "Max Mustermann");
+            dto.Set("Age", 65);
+            dto.Set("Birthday", new DateTime(1960, 6, 28));
+            dto.Set("IsActive", true);
+            dto.Set("Parts", new List<string> { "Part1", "Part2", "Part3" });
+
+            List<string> parts = dto.Get<List<string>>("Parts");
+
+            if (dto.Get<string>("Name", out var name))
+            {
+                ConsoleMenu.Print($"Name: {name}");
+            }
+
+            ConsoleMenu.Wait();
+        }
+
+        private static void MenuPoint7()
+        {
+            Console.Clear();
+
+            SmallDTO dto = new();
+            dto.Set("Name", "Max Mustermann");
+            dto.Set("Age", 65);
+            dto.Set("Birthday", new DateTime(1960, 6, 28));
+            dto.Set("IsActive", true);
+            dto.Set("Parts", new List<string> { "Part1", "Part2", "Part3" });
+
+            SmallDTO dto2 = new();
+            dto2.Set("Name", "Max Mustermann");
+            dto2.Set("Age", 65);
+            dto2.Set("Birthday", new DateTime(1960, 6, 28));
+            dto2.Set("IsActive", true);
+            dto2.Set("Parts", new List<string> { "Part1", "Part2", "Part3" });
+
+            if (dto.Equals(dto2) == true)
+            {
+                ConsoleMenu.Print("Die beiden DTO Objekte sind gleich.");
+            }
+            else
+            {
+                ConsoleMenu.Print("Die beiden DTO Objekte sind ungleich.");
+            }
+
+            ConsoleMenu.Wait();
+        }
+
+        private static void MenuPoint8()
+        {
+            Console.Clear();
+
+            SmallDTO dto = new();
+            dto.Set("Name", "Max Mustermann");
+            dto.Set("Age", 65);
+            dto.Set("Birthday", new DateTime(1960, 6, 28));
+            dto.Set("IsActive", true);
+            dto.Set("Parts", new List<string> { "Part1", "Part2", "Part3" });
+
+            SmallDTO dtoClone = dto.Clone();
+
+            if (dto.Equals(dtoClone) == true)
+            {
+                ConsoleMenu.Print("Die beiden DTO Objekte sind gleich.");
+                var dtoHash = dto.GetHashCode();
+                var dtoCloneHash = dtoClone.GetHashCode();
+                if (dtoHash.Equals(dtoCloneHash) == true)
+                {
+                    ConsoleMenu.Print("Der HashCode beiden DTO Objekte ist gleich.");
+                }
+                else
+                {
+                    ConsoleMenu.Print("Der HashCode beiden DTO Objekte ist ungleich.");
+                }
+            }
+            else
+            {
+                ConsoleMenu.Print("Die beiden DTO Objekte sind ungleich.");
+            }
+
+            ConsoleMenu.Wait();
+        }
+
+        private static void MenuPoint9()
+        {
+            Console.Clear();
+
+            SmallDTO dto = new();
+            dto.Set("Name", "Max Mustermann");
+            dto.Set("Age", 65);
+            dto.Set("Birthday", new DateTime(1960, 6, 28));
+            dto.Set("IsActive", true);
+            dto.Set("Parts", new List<string> { "Part1", "Part2", "Part3" });
+            dto.ToJson("dto.json");
+            int count = dto.Count;
+
+            dto.Clear();
+
+            dto.FromJson("dto.json");
+            int count1 = dto.Count;
+
+            ConsoleMenu.Wait();
+        }
+
     }
 
     public class ClassicDTO
@@ -182,7 +301,221 @@ namespace SmallDTODemo
         IsActive,
     }
 
-    public sealed class SmallDTO<TKey> where TKey : Enum
+    public sealed partial class SmallDTO
+    {
+        private Dictionary<string, object> _DtoDict = new();
+        public int Count { get { return this._DtoDict.Count; } }
+
+        public void Set<T>(string key, T value)
+        {
+            key = key.ToUpper(CultureInfo.CurrentCulture);
+            if (value == null)
+            {
+                this._DtoDict[key] = null;
+            }
+            else
+            {
+                this._DtoDict[key] = Convert.ChangeType(value, typeof(T), CultureInfo.CurrentCulture);
+            }
+        }
+
+        public bool Get<T>(string key, out T value)
+        {
+            key = key.ToUpper(CultureInfo.CurrentCulture);
+            if (this._DtoDict.TryGetValue(key, out var obj) == true && obj is T tValue)
+            {
+                value = tValue;
+                return true;
+            }
+
+            if (obj == null)
+            {
+                value = (T)obj;
+                return true;
+            }
+
+            value = default!;
+            return false;
+        }
+
+        public T Get<T>(string key)
+        {
+            key = key.ToUpper(CultureInfo.CurrentCulture);
+            if (this._DtoDict.TryGetValue(key, out var obj) == true && obj is T tValue)
+            {
+                return tValue;
+            }
+
+            return default!;
+        }
+
+        public bool Equals(SmallDTO anotherDTO)
+        {
+            if (ReferenceEquals(this._DtoDict, anotherDTO))
+            {
+                return true;
+            }
+
+            if (this._DtoDict == null || anotherDTO == null)
+            {
+                return false;
+            }
+
+            if (this._DtoDict.Count != anotherDTO.Count)
+            {
+                return false;
+            }
+
+            EqualityComparer<object> valueComparer = EqualityComparer<object>.Default;
+            foreach (var kvp in this._DtoDict)
+            {
+                string key = kvp.Key.ToUpper(CultureInfo.CurrentCulture);
+                if (!anotherDTO.Get<object>(key, out var value))
+                {
+                    return false;
+                }
+
+                if (value.GetType().Name == typeof(List<>).Name)
+                {
+                    var v0 = kvp.Value as System.Collections.IList;
+                    var v1 = value as System.Collections.IList;
+                    if (v0.Count != v1.Count)
+                    {
+                        return false;
+                    }
+
+                    var diff = v0.Cast<object>().Except(v1.Cast<object>());
+                    if (diff.Any() == true)
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    if (valueComparer.Equals(kvp.Value, value) == false)
+                    {
+                        return false;
+                    }
+                }
+
+            }
+
+            return true;
+        }
+
+        public SmallDTO Clone()
+        {
+            SmallDTO newDto = new();
+            foreach (var kvp in this._DtoDict)
+            {
+                newDto._DtoDict[kvp.Key] = kvp.Value;
+            }
+
+            return newDto;
+        }
+
+        public void Clear()
+        {
+            if (_DtoDict != null && _DtoDict.Any() == true)
+            {
+                _DtoDict.Clear();
+            }
+        }
+
+        public void ToJson(string filePath)
+        {
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+            };
+
+            JsonSerializerOptions options = jsonSerializerOptions;
+
+            options.Converters.Add(new ObjectDictionaryConverter());
+            string json = JsonSerializer.Serialize(this._DtoDict, options);
+            if (string.IsNullOrEmpty(json) == false)
+            {
+                File.WriteAllText(filePath, json);
+            }
+        }
+
+        public void FromJson(string filePath)
+        {
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+            };
+
+            JsonSerializerOptions options = jsonSerializerOptions;
+            options.Converters.Add(new ObjectDictionaryConverter());
+
+            if (string.IsNullOrEmpty(filePath) == false && File.Exists(filePath) == true)
+            {
+                string jsonText = File.ReadAllText(filePath);
+                this._DtoDict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonText, options);
+            }
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            foreach (var kvp in this._DtoDict)
+            {
+                sb.AppendLine(CultureInfo.CurrentCulture, $"{kvp.Key}: {kvp.Value}");
+            }
+
+            return sb.ToString();
+        }
+
+        public override int GetHashCode()
+        {
+            int result = 0;
+            HashCode hash = new();
+
+            foreach (var kvp in this._DtoDict)
+            {
+                hash.Add(kvp.Key);
+                hash.Add(kvp.Value);
+            }
+
+            result = hash.ToHashCode();
+
+            return result;
+        }
+
+        private sealed class ObjectDictionaryConverter : JsonConverter<Dictionary<string, object>>
+        {
+            public override Dictionary<string, object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                var result = new Dictionary<string, object>();
+
+                using var doc = JsonDocument.ParseValue(ref reader);
+
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    string key = prop.Name;
+                    result[key] = prop.Value;
+                }
+
+                return result;
+            }
+
+            public override void Write(Utf8JsonWriter writer, Dictionary<string, object> value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+
+                foreach (var kvp in value)
+                {
+                    writer.WritePropertyName(kvp.Key.ToString());
+                    JsonSerializer.Serialize(writer, kvp.Value, options);
+                }
+
+                writer.WriteEndObject();
+            }
+        }
+    }
+
+    public sealed partial class SmallDTO<TKey> where TKey : Enum
     {
         private Dictionary<Enum,object> _DtoDict = new();
 
@@ -282,6 +615,14 @@ namespace SmallDTODemo
             return true;
         }
 
+        public void Clear()
+        {
+            if (_DtoDict != null && _DtoDict.Any() == true)
+            {
+                _DtoDict.Clear();
+            }
+        }
+
         public SmallDTO<TKey> Clone()
         {
             SmallDTO<TKey> newDto = new();
@@ -295,10 +636,11 @@ namespace SmallDTODemo
 
         public void ToJson(string filePath)
         {
-            var options = new JsonSerializerOptions
+            JsonSerializerOptions jsonSerializerOptions = new()
             {
                 WriteIndented = true,
             };
+            var options = jsonSerializerOptions;
 
             options.Converters.Add(new EnumObjectDictionaryConverter());
             string json = JsonSerializer.Serialize(this._DtoDict, options);
@@ -308,12 +650,29 @@ namespace SmallDTODemo
             }
         }
 
+        public void FromJson(string filePath)
+        {
+            JsonSerializerOptions jsonSerializerOptions = new()
+            {
+                WriteIndented = true,
+            };
+
+            JsonSerializerOptions options = jsonSerializerOptions;
+            options.Converters.Add(new EnumObjectDictionaryConverter());
+
+            if (string.IsNullOrEmpty(filePath) == false && File.Exists(filePath) == true)
+            {
+                string jsonText = File.ReadAllText(filePath);
+                this._DtoDict = JsonSerializer.Deserialize<Dictionary<Enum, object>>(jsonText, options);
+            }
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new();
             foreach (var kvp in this._DtoDict)
             {
-                sb.AppendLine($"{kvp.Key}: {kvp.Value}");
+                sb.AppendLine(CultureInfo.CurrentCulture,$"{kvp.Key}: {kvp.Value}");
             }
 
             return sb.ToString();
@@ -335,7 +694,7 @@ namespace SmallDTODemo
             return result;
         }
 
-        private class EnumObjectDictionaryConverter : JsonConverter<Dictionary<Enum, object>>
+        private sealed class EnumObjectDictionaryConverter : JsonConverter<Dictionary<Enum, object>>
         {
             public override Dictionary<Enum, object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
